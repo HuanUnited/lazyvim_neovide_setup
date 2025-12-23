@@ -15,13 +15,21 @@ vim.keymap.set("i", "<A-h>", "<Left>", { desc = "insert left" })
 vim.keymap.set("i", "<A-j>", "<Down>", { desc = "insert down" })
 vim.keymap.set("i", "<A-k>", "<Up>", { desc = "insert up" })
 vim.keymap.set("i", "<A-l>", "<Right>", { desc = "insert right" })
+
 -- Keymaps are automatically loaded on the VeryLazy event
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
--- CMake keybindings (ct now free for CMake)
-vim.keymap.set("n", "<leader>cr", ":CMakeRun<CR>", { desc = "CMake run" })
-vim.keymap.set("n", "<leader>cd", ":CMakeDebug<CR>", { desc = "CMake debug" })
-vim.keymap.set("n", "<leader>ct", ":CMakeSelectBuildType<CR>", { desc = "CMake select build type" })
+
+-- CMake keybindings using cmake-tools.nvim
+vim.keymap.set("n", "<leader>cb", ":CMakeBuild<CR>", { noremap = true, silent = true, desc = "CMake Build" })
+vim.keymap.set("n", "<leader>cr", ":CMakeRun<CR>", { noremap = true, silent = true, desc = "CMake Run" })
+vim.keymap.set("n", "<leader>cR", ":CMakeRunWithDebugger<CR>", { noremap = true, silent = true, desc = "CMake Debug Run" })
+vim.keymap.set("n", "<leader>cd", ":CMakeDebug<CR>", { noremap = true, silent = true, desc = "CMake Debug" })
+vim.keymap.set("n", "<leader>ct", ":CMakeSelectBuildType<CR>", { noremap = true, silent = true, desc = "CMake Select Build Type" })
+vim.keymap.set("n", "<leader>cg", ":CMakeSelectGenerator<CR>", { noremap = true, silent = true, desc = "CMake Select Generator" })
+vim.keymap.set("n", "<leader>cc", ":CMakeOpenCodeModel<CR>", { noremap = true, silent = true, desc = "CMake Code Model" })
+vim.keymap.set("n", "<leader>cs", ":CMakeSelectKit<CR>", { noremap = true, silent = true, desc = "CMake Select Kit" })
+vim.keymap.set("n", "<leader>c<C-t>", ":CMakeStopRunner<CR>", { noremap = true, silent = true, desc = "CMake Stop" })
 
 local TERM_ID = 1
 
@@ -69,3 +77,19 @@ vim.keymap.set("n", "<leader>tt", function()
     }
   )
 end, { desc = "Toggle float shell" })
+
+-- CMake with Snacks terminal integration (optional: custom CMake build with output)
+vim.keymap.set("n", "<leader>c!", function()
+  local build_dir = vim.fn.getcwd() .. "/build"
+  local cmd = string.format(
+    "mkdir -p '%s' && cd '%s' && cmake .. && make; read -p 'Press Enter to close...'",
+    build_dir,
+    build_dir
+  )
+
+  Snacks.terminal.open('bash -c "' .. cmd .. '"', {
+    id = TERM_ID + 1,
+    cwd = vim.fn.getcwd(),
+    win = { style = "float" },
+  })
+end, { desc = "CMake Build (manual with Snacks)" })
