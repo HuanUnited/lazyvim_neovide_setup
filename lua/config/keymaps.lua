@@ -20,16 +20,29 @@ vim.keymap.set("i", "<A-l>", "<Right>", { desc = "insert right" })
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
 
--- CMake keybindings using cmake-tools.nvim
-vim.keymap.set("n", "<leader>cb", ":CMakeBuild<CR>", { noremap = true, silent = true, desc = "CMake Build" })
-vim.keymap.set("n", "<leader>cr", ":CMakeRun<CR>", { noremap = true, silent = true, desc = "CMake Run" })
-vim.keymap.set("n", "<leader>cR", ":CMakeRunWithDebugger<CR>", { noremap = true, silent = true, desc = "CMake Debug Run" })
-vim.keymap.set("n", "<leader>cd", ":CMakeDebug<CR>", { noremap = true, silent = true, desc = "CMake Debug" })
-vim.keymap.set("n", "<leader>ct", ":CMakeSelectBuildType<CR>", { noremap = true, silent = true, desc = "CMake Select Build Type" })
-vim.keymap.set("n", "<leader>cg", ":CMakeSelectGenerator<CR>", { noremap = true, silent = true, desc = "CMake Select Generator" })
-vim.keymap.set("n", "<leader>cc", ":CMakeOpenCodeModel<CR>", { noremap = true, silent = true, desc = "CMake Code Model" })
-vim.keymap.set("n", "<leader>cs", ":CMakeSelectKit<CR>", { noremap = true, silent = true, desc = "CMake Select Kit" })
-vim.keymap.set("n", "<leader>c<C-t>", ":CMakeStopRunner<CR>", { noremap = true, silent = true, desc = "CMake Stop" })
+-- Load CMake helper functions
+local cmake = require("custom.cmake-config")
+
+-- CMake keybindings using custom functions
+vim.keymap.set("n", "<leader>cb", function()
+  cmake.build()
+end, { noremap = true, silent = true, desc = "CMake Build" })
+
+vim.keymap.set("n", "<leader>cr", function()
+  cmake.run_executable()
+end, { noremap = true, silent = true, desc = "CMake Run" })
+
+vim.keymap.set("n", "<leader>ci", function()
+  cmake.init_cmake()
+end, { noremap = true, silent = true, desc = "CMake Init" })
+
+vim.keymap.set("n", "<leader>cs", function()
+  cmake.show_settings()
+end, { noremap = true, silent = true, desc = "CMake Settings" })
+
+vim.keymap.set("n", "<leader>cD", function()
+  vim.cmd("terminal cmake --version")
+end, { noremap = true, silent = true, desc = "Check CMake Version" })
 
 local TERM_ID = 1
 
