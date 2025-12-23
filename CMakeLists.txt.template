@@ -1,0 +1,48 @@
+# CMakeLists.txt Template for LazyVim CMake Integration
+# Copy this to your project root and customize
+
+cmake_minimum_required(VERSION 3.15)
+project(MyProject VERSION 1.0.0 LANGUAGES CXX)
+
+# C++ Standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall")
+
+# Export compile commands for LSP
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# Source files
+set(SOURCES
+    src/main.cpp
+    # Add more sources here
+    # src/utils.cpp
+    # src/helper.cpp
+)
+
+# Main executable
+add_executable(${PROJECT_NAME} ${SOURCES})
+
+# Include directories
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+# Optional: Link libraries
+# target_link_libraries(${PROJECT_NAME} PRIVATE
+#     somelib
+# )
+
+# Optional: Enable testing
+# enable_testing()
+# add_subdirectory(tests)
+
+# Optional: Find and link external packages
+# find_package(Threads REQUIRED)
+# target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
