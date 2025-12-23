@@ -38,3 +38,11 @@ vim.api.nvim_create_autocmd("TermOpen", {
     vim.cmd("startinsert")
   end,
 })
+
+-- Global: Escape exits ALL terminal buffers
+vim.api.nvim_create_autocmd("TermOpen", {
+  pattern = "*",
+  callback = function(args)
+    vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { buffer = args.buf })
+  end,
+})
