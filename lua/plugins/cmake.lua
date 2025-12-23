@@ -1,26 +1,14 @@
+-- CMake build integration for LazyVim
+-- Since cmake-tools.nvim has dependencies, we'll use a simpler approach with custom commands
+
 return {
-  -- CMake integration for building and running C++ projects
+  -- Optional: Add cmake support via treesitter
   {
-    "Civitasv/cmake-tools.nvim",
-    lazy = true,
-    ft = { "cmake" },
-    config = function()
-      require("cmake-tools").setup({
-        cmake_command = "cmake",
-        ctest_command = "ctest",
-        cmake_build_directory = "build",
-        cmake_build_type = "Debug",
-        cmake_generate_options = {
-          "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-        },
-        cmake_console_size = 10,
-        cmake_console_position = "belowright",
-        cmake_show_console = "always",
-        cmake_always_compile = true,
-        on_launch_template = function(targets)
-          return targets
-        end,
-      })
+    "nvim-treesitter/nvim-treesitter",
+    opts = function(_, opts)
+      if type(opts.ensure_installed) == "table" then
+        vim.list_extend(opts.ensure_installed, { "cmake" })
+      end
     end,
   },
 }
