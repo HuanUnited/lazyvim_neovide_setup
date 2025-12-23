@@ -53,7 +53,7 @@ vim.keymap.set("n", "<leader>cB", function()
     cwd = vim.fn.expand("%:p:h"),
     win = { style = "float" },
   })
-end, { desc = "C++ Build and Run" })
+end, { desc = "C++ Build and Run", noremap = true, silent = true })
 
 -- Python: Explicit python invocation
 vim.keymap.set("n", "<leader>cp", function()
@@ -64,7 +64,7 @@ vim.keymap.set("n", "<leader>cp", function()
     cwd = vim.fn.expand("%:p:h"),
     win = { style = "float" },
   })
-end, { desc = "Python in float" })
+end, { desc = "Python in float", noremap = true, silent = true })
 
 -- Empty shell terminal
 vim.keymap.set("n", "<leader>tt", function()
@@ -76,7 +76,7 @@ vim.keymap.set("n", "<leader>tt", function()
       win = { style = "float" },
     }
   )
-end, { desc = "Toggle float shell" })
+end, { desc = "Toggle float shell", noremap = true, silent = true })
 
 -- CMake with Snacks terminal integration (optional: custom CMake build with output)
 vim.keymap.set("n", "<leader>c!", function()
@@ -92,4 +92,4 @@ vim.keymap.set("n", "<leader>c!", function()
     cwd = vim.fn.getcwd(),
     win = { style = "float" },
   })
-end, { desc = "CMake Build (manual with Snacks)" })
+end, { desc = "CMake Build (manual with Snacks)", noremap = true, silent = true })
