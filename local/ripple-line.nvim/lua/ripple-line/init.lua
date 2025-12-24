@@ -25,15 +25,15 @@ local config = {
   extra_column = false,         -- add decorative │ bar after numbers
   wiggle = {
     enabled = true,
-    radius = 8,                 -- neighborhood size (6-8 for wider effect)
-    duration = 320,             -- ms (slower)
-    frames = 18,                -- more frames for smoother motion
-    base_amplitude = 1,         -- base max offset in cells
-    max_amplitude = 3,          -- max amplitude for big jumps
-    jump_scale = 0.15,          -- how much jump distance scales amplitude
-    cycles = 2.5,               -- oscillations during animation
-    phase_per_step = math.pi / 4,  -- phase lag per distance step
-    sigma = 2.0,                -- wider gaussian falloff
+    radius = 8,                 -- neighborhood size (wider effect)
+    duration = 600,             -- ms (much slower for dramatic effect)
+    frames = 30,                -- many frames for ultra-smooth motion
+    base_amplitude = 2,         -- base max offset (higher for visibility)
+    max_amplitude = 4,          -- max amplitude for big jumps
+    jump_scale = 0.2,           -- how much jump distance scales amplitude
+    cycles = 1.5,               -- fewer cycles = slower oscillation
+    phase_per_step = math.pi / 5,  -- phase lag per distance step
+    sigma = 2.5,                -- wider gaussian falloff
   },
 }
 
@@ -47,7 +47,7 @@ local state = {
   wiggle_center = 0,
   wiggle_tick = 0,
   wiggle_active = false,
-  wiggle_amplitude = 1,         -- dynamic amplitude based on jump distance
+  wiggle_amplitude = 2,         -- dynamic amplitude based on jump distance
 }
 
 -- ============================================================================
@@ -80,6 +80,15 @@ local function ease_in_out_quad(x)
   return x < 0.5 
     and 2 * x * x 
     or 1 - math.pow(-2 * x + 2, 2) / 2
+end
+
+local function ease_in_out_back(x)
+  local c1 = 1.70158
+  local c2 = c1 * 1.525
+  
+  return x < 0.5
+    and (math.pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
+    or (math.pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2
 end
 
 -- ============================================================================
@@ -227,7 +236,7 @@ function fade_to_base()
 end
 
 -- ============================================================================
--- Wiggle animation (neighborhood ripple with jump-distance scaling)
+-- Wiggle animation (wider travel with smooth reset)
 -- ============================================================================
 
 local function wiggle_offset_for_dist(dist)
@@ -239,41 +248,35 @@ local function wiggle_offset_for_dist(dist)
   local amp = state.wiggle_amplitude
 
   -- Distance falloff (strongest at center)
-  local falloff = math.exp(-dist * dist / (2 * (config.wiggle.sigma or 2.0)^2))
+  local falloff = math.exp(-dist * dist / (2 * (config.wiggle.sigma or 2.5)^2))
 
-  -- Traveling wave: phase shifts by distance so it looks like a ripple ring
-  local t = state.wiggle_tick / (config.wiggle.frames or 18)
-  local omega = (config.wiggle.cycles or 2.5) * 2 * math.pi -- oscillations
-  local phase = dist * (config.wiggle.phase_per_step or (math.pi / 4))
-
-  -- Damping over time
-  local damp = 1 - t
-  local s = math.sin(omega * t - phase) * falloff * damp * amp
-
-  -- Quantize to integer cell offset based on amplitude
-  -- Larger jumps get more range: -2, -1, 0, 1, 2, 3
-  local threshold = 0.25
-  if amp > 2 then
-    -- Allow up to ±3 for big jumps
-    if s > 2 * threshold then return 3 end
-    if s > threshold then return 2 end
-    if s > 0 then return 1 end
-    if s < -2 * threshold then return -3 end
-    if s < -threshold then return -2 end
-    if s < 0 then return -1 end
-  elseif amp > 1 then
-    -- Allow up to ±2
-    if s > threshold then return 2 end
-    if s > 0 then return 1 end
-    if s < -threshold then return -2 end
-    if s < 0 then return -1 end
-  else
-    -- Standard ±1
-    if s > 0.33 then return 1 end
-    if s < -0.33 then return -1 end
-  end
+  -- Traveling wave with smooth ease in/out for natural motion
+  local t = state.wiggle_tick / (config.wiggle.frames or 30)
   
-  return 0
+  -- Use back easing for overshoot effect (travels far then snaps back)
+  local eased_t = ease_in_out_back(t)
+  
+  local omega = (config.wiggle.cycles or 1.5) * 2 * math.pi
+  local phase = dist * (config.wiggle.phase_per_step or (math.pi / 5))
+
+  -- Wave equation with smooth damping
+  local s = math.sin(omega * eased_t - phase) * falloff * amp
+
+  -- Apply overall envelope that brings everything back to 0 at end
+  local envelope = math.sin(t * math.pi) -- peaks at 0.5, returns to 0 at end
+  s = s * envelope
+
+  -- Convert to integer offset with wider range
+  if s > 3 then return 4
+  elseif s > 2 then return 3
+  elseif s > 1 then return 2
+  elseif s > 0.3 then return 1
+  elseif s < -3 then return -4
+  elseif s < -2 then return -3
+  elseif s < -1 then return -2
+  elseif s < -0.3 then return -1
+  else return 0
+  end
 end
 
 local function clamp(x, lo, hi)
@@ -286,8 +289,8 @@ local function format_wiggle_number(lnum, width, offset)
   local s = tostring(lnum)
   local avail = math.max(0, width - #s)
 
-  -- Reserve extra space for larger offsets
-  local reserve = math.min(3, math.max(1, math.ceil(state.wiggle_amplitude)))
+  -- Reserve more space for larger offsets (up to 5 cells)
+  local reserve = math.min(5, math.max(2, math.ceil(state.wiggle_amplitude)))
   local base_left = math.max(0, avail - reserve)
 
   local left = clamp(base_left + offset, 0, avail)
@@ -300,14 +303,14 @@ local function start_wiggle(jump_distance)
   if not (config.wiggle and config.wiggle.enabled) then return end
 
   local my_id = state.wave_id
-  local frames = math.max(6, config.wiggle.frames or 18)
-  local total = config.wiggle.duration or 320
+  local frames = math.max(10, config.wiggle.frames or 30)
+  local total = config.wiggle.duration or 600
   local dt = math.floor(total / frames)
 
   -- Scale amplitude based on jump distance
-  local base_amp = config.wiggle.base_amplitude or 1
-  local max_amp = config.wiggle.max_amplitude or 3
-  local scale = config.wiggle.jump_scale or 0.15
+  local base_amp = config.wiggle.base_amplitude or 2
+  local max_amp = config.wiggle.max_amplitude or 4
+  local scale = config.wiggle.jump_scale or 0.2
   
   state.wiggle_amplitude = math.min(max_amp, base_amp + jump_distance * scale)
   
@@ -335,7 +338,7 @@ local function start_wiggle(jump_distance)
 end
 
 -- ============================================================================
--- Statuscolumn function (with relative numbers)
+-- Statuscolumn function (fixed duplicate line bug)
 -- ============================================================================
 
 function _G.RippleLine_statuscolumn()
@@ -351,10 +354,18 @@ function _G.RippleLine_statuscolumn()
   -- Apply wiggle offset based on distance
   local offset = wiggle_offset_for_dist(dist)
   
-  local width = vim.o.numberwidth
+  -- Adjust numberwidth to accommodate wiggle
+  local width = vim.o.numberwidth + 4  -- Extra space for wiggle travel
   
   -- Show absolute number on cursor line, relative on others (LazyVim style)
-  local display_num = (relnum == 0) and lnum or relnum
+  -- FIX: Only show relnum when it's actually relative (non-zero distance)
+  local display_num
+  if dist == 0 then
+    display_num = lnum  -- Cursor line: show absolute
+  else
+    display_num = relnum  -- Other lines: show relative distance
+  end
+  
   local numtxt = format_wiggle_number(display_num, width, offset)
   
   local tail = config.extra_column and "│ " or " "
@@ -417,6 +428,9 @@ function M.setup(user_config)
   -- Enable relative line numbers with absolute on cursor line (LazyVim style)
   vim.opt.number = true
   vim.opt.relativenumber = true
+  
+  -- Increase numberwidth to accommodate wiggle animation
+  vim.opt.numberwidth = 4
   
   -- Initialize
   set_base_gradient()
