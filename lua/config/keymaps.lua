@@ -68,11 +68,18 @@ vim.keymap.set("n", "<leader>cB", function()
   })
 end, { desc = "C++ Build and Run", noremap = true, silent = true })
 
--- Python: Explicit python invocation
+-- Python run.
 vim.keymap.set("n", "<leader>cp", function()
   local file = vim.fn.expand("%:p")
+  local timestamp = os.date("%H:%M:%S")
 
-  Snacks.terminal.open(string.format("python3 '%s'; read -p 'Press Enter to close...'", file), {
+  local cmd = string.format(
+    "echo '═══ Started %s ═══' && python3 '%s'; echo ''; read '?Press Enter to close...'",
+    timestamp,
+    file
+  )
+
+  Snacks.terminal.open(string.format('zsh -c "%s"', cmd), {
     id = TERM_ID,
     cwd = vim.fn.expand("%:p:h"),
     win = { style = "float" },
@@ -106,3 +113,5 @@ vim.keymap.set("n", "<leader>c!", function()
     win = { style = "float" },
   })
 end, { desc = "CMake Build (manual with Snacks)", noremap = true, silent = true })
+
+vim.keymap.set("i", "jj", "<Esc>", { noremap = true, silent = true })
