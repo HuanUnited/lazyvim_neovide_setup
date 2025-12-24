@@ -292,6 +292,22 @@ local function format_wiggle_number(lnum, width, offset)
   return string.rep(" ", left) .. s .. string.rep(" ", right)
 end
 
+local function check_wiggle_complete()
+  -- Check if all visible lines have returned to near-zero offset
+  local max_offset = 0
+  local radius = config.wiggle.radius or 8
+  
+  for dist = 0, radius do
+    local offset = math.abs(wiggle_offset_for_dist(dist))
+    if offset > max_offset then
+      max_offset = offset
+    end
+  end
+  
+  -- Consider complete if max offset is less than 0.1 pixels
+  return max_offset < 0.1
+end
+
 local function start_wiggle(jump_distance)
   if not (config.wiggle and config.wiggle.enabled) then return end
 
@@ -318,12 +334,18 @@ local function start_wiggle(jump_distance)
     -- Forces statuscolumn re-evaluation during animation
     vim.cmd("redraw")
 
-    if state.wiggle_tick <= frames then
+    -- FIXED: Continue until animation is complete AND all offsets are near zero
+    local past_min_frames = state.wiggle_tick >= frames
+    local all_settled = check_wiggle_complete()
+    
+    if not (past_min_frames and all_settled) then
+      -- Continue animating
       vim.defer_fn(tick, dt)
     else
-      -- FIXED: Ensure clean reset
+      -- Animation complete - clean reset
       state.wiggle_active = false
       state.wiggle_amplitude = base_amp
+      state.wiggle_tick = 0
       vim.cmd("redraw")
     end
   end
