@@ -246,8 +246,8 @@ local function wiggle_offset_for_dist(dist)
   -- Distance falloff (strongest at center)
   local falloff = math.exp(-dist * dist / (2 * (config.wiggle.sigma or 3.0)^2))
 
-  -- Progress through animation (0 to 1)
-  local t = state.wiggle_tick / (config.wiggle.frames or 40)
+  -- Progress through animation (0 to 1) - CLAMP to prevent overshoot
+  local t = math.min(1.0, state.wiggle_tick / (config.wiggle.frames or 40))
   
   -- FIXED: Use sine easing for smooth motion
   local eased_t = ease_in_out_sine(t)
@@ -259,6 +259,7 @@ local function wiggle_offset_for_dist(dist)
   local wave = math.sin(omega * eased_t - phase)
   
   -- FIXED: Proper envelope that goes to exactly 0 at both ends
+  -- When t = 1.0, sin(pi) = 0
   local envelope = math.sin(t * math.pi)
   
   -- Combined offset
@@ -292,22 +293,6 @@ local function format_wiggle_number(lnum, width, offset)
   return string.rep(" ", left) .. s .. string.rep(" ", right)
 end
 
-local function check_wiggle_complete()
-  -- Check if all visible lines have returned to near-zero offset
-  local max_offset = 0
-  local radius = config.wiggle.radius or 8
-  
-  for dist = 0, radius do
-    local offset = math.abs(wiggle_offset_for_dist(dist))
-    if offset > max_offset then
-      max_offset = offset
-    end
-  end
-  
-  -- Consider complete if max offset is less than 0.1 pixels
-  return max_offset < 0.1
-end
-
 local function start_wiggle(jump_distance)
   if not (config.wiggle and config.wiggle.enabled) then return end
 
@@ -334,15 +319,11 @@ local function start_wiggle(jump_distance)
     -- Forces statuscolumn re-evaluation during animation
     vim.cmd("redraw")
 
-    -- FIXED: Continue until animation is complete AND all offsets are near zero
-    local past_min_frames = state.wiggle_tick >= frames
-    local all_settled = check_wiggle_complete()
-    
-    if not (past_min_frames and all_settled) then
-      -- Continue animating
+    -- Continue until we've reached the end (t = 1.0 is when envelope = 0)
+    if state.wiggle_tick < frames then
       vim.defer_fn(tick, dt)
     else
-      -- Animation complete - clean reset
+      -- One final frame to ensure everything is at exactly 0
       state.wiggle_active = false
       state.wiggle_amplitude = base_amp
       state.wiggle_tick = 0
